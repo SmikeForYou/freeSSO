@@ -2,9 +2,7 @@ package config
 
 import (
 	"fmt"
-	"freeSSO/internal/app/logger"
-	"freeSSO/internal/app/utils"
-	"sync"
+	"os"
 )
 
 type MemDbConfig struct {
@@ -54,53 +52,57 @@ type AppConfig struct {
 	ActionLoggerConfig
 }
 
-var appConfig AppConfig
+var appConfig *AppConfig
 
 // GetAppConfig returns application config
-func GetAppConfig() AppConfig {
-	var once sync.Once
-	once.Do(func() {
+func GetAppConfig() *AppConfig {
+	if appConfig == nil {
 		//init base app values
-		err := utils.InitStructFromEnv(&appConfig)
+		err := InitStructFromEnv(&appConfig)
 		if err != nil {
-			logger.AppLogger.Fatalln(err)
+			fmt.Print(err)
+			os.Exit(1)
 		}
 		//init db config
 		var dbConf DbConfig
-		err = utils.InitStructFromEnv(&dbConf)
+		err = InitStructFromEnv(&dbConf)
 		if err != nil {
-			logger.AppLogger.Fatalln(err)
+			fmt.Print(err)
+			os.Exit(1)
 		}
 		appConfig.DbConfig = dbConf
 		//init in memory db config
 		var memDbConf MemDbConfig
-		err = utils.InitStructFromEnv(&memDbConf)
+		err = InitStructFromEnv(&memDbConf)
 		if err != nil {
-			logger.AppLogger.Fatalln(err)
+			fmt.Print(err)
+			os.Exit(1)
 		}
 		appConfig.MemDbConfig = memDbConf
 		//init grpc server config
 		var grpcServerConfig GrpcServerConfig
-		err = utils.InitStructFromEnv(&grpcServerConfig)
+		err = InitStructFromEnv(&grpcServerConfig)
 		if err != nil {
-			logger.AppLogger.Fatalln(err)
+			fmt.Print(err)
+			os.Exit(1)
 		}
 		appConfig.GrpcServerConfig = grpcServerConfig
 		//init http server config
 		var httpServerConfig HttpServerConfig
-		err = utils.InitStructFromEnv(&httpServerConfig)
+		err = InitStructFromEnv(&httpServerConfig)
 		if err != nil {
-			logger.AppLogger.Fatalln(err)
+			fmt.Print(err)
+			os.Exit(1)
 		}
 		appConfig.HttpServerConfig = httpServerConfig
 		//init action logger config
 		var actionLoggerConfig ActionLoggerConfig
-		err = utils.InitStructFromEnv(&actionLoggerConfig)
+		err = InitStructFromEnv(&actionLoggerConfig)
 		if err != nil {
-			logger.AppLogger.Fatalln(err)
+			fmt.Print(err)
+			os.Exit(1)
 		}
 		appConfig.ActionLoggerConfig = actionLoggerConfig
-		logger.AppLogger.Infof("Running app with conf %+v\n", appConfig)
-	})
+	}
 	return appConfig
 }

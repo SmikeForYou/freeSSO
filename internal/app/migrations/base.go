@@ -3,25 +3,25 @@ package migrations
 //TODO: create go gen script for migrations
 
 import (
+	"errors"
 	"fmt"
-	"github.com/jackc/pgx"
+	"freeSSO/internal/app/logger"
 	"strings"
-)
 
-type migrationScript struct {
-	before func(*pgx.Conn) error
-	sql    string
-	after  func(*pgx.Conn) error
-}
+	"github.com/jackc/pgx"
+	"github.com/sirupsen/logrus"
+)
 
 type migration struct {
 	dependsOn string
 	version   string
-	up        migrationScript
-	down      migrationScript
+	up        func(*pgx.Conn) error
+	down      func(*pgx.Conn) error
 }
 
 type migrations []migration
+
+var log *logrus.Entry = logger.GetLogger()
 
 func (m migrations) getMigration(version string) (migration, error) {
 	for _, mg := range m {
@@ -44,7 +44,7 @@ func (m migrations) getMigrationByDependency(depVersion string) (migration, erro
 func validateVersions(m migrations) error {
 	for _, mg := range m {
 		if mg.version == "" {
-			return fmt.Errorf("all migrations have to have version")
+			return fmt.Errorf("all migrations need version")
 		}
 	}
 	return nil
@@ -67,7 +67,7 @@ func validateDependencies(m migrations) error {
 	return nil
 }
 
-func order(m migrations) (migrations, error) {
+func (m migrations) order() (migrations, error) {
 	nmg := make(migrations, 0)
 	for i := range m {
 		if i == 0 {
@@ -88,11 +88,49 @@ func order(m migrations) (migrations, error) {
 	return nmg, nil
 }
 
-//Migrate applies migrations
-func Migrate(pool *pgx.ConnPool) error {
+func (m migrations) getHead(version string) migrations {
+	res := make(migrations, 0)
+	for _, m := range m {
+		res = append(res, m)
+		if m.version == version {
+			return res
+		}
+	}
+	return m
+}
+func (m migrations) apply(version string, pool *pgx.ConnPool) error {
+	mig := m.getHead(version)
 	conn, err := pool.Acquire()
 	if err != nil {
 		return err
 	}
+	for _, mi := range mig {
+		err = mi.up(conn)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 
+}
+
+//Migrate applies migrations
+func MigrateWithPool(migr migrations, pool *pgx.ConnPool) error {
+	err := validateVersions(migr)
+	if err != nil {
+		log.Error(errors.New("error validating migrations versions"))
+		log.Error(err)
+	}
+	err = validateDependencies(migr)
+	if err != nil {
+		log.Error(errors.New("error validating migrations dependencies"))
+		log.Error(err)
+	}
+	ordered, err := migr.order()
+	if err != nil {
+		log.Error(errors.New("error ordering migrations"))
+		log.Error(err)
+	}
+	err = ordered.apply("", pool)
+	return err
 }

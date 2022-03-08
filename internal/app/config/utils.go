@@ -1,4 +1,4 @@
-package utils
+package config
 
 import (
 	"fmt"
@@ -51,7 +51,7 @@ func mapMapToStruct(target interface{}, valuesMap map[string]string) error {
 		switch value.Kind() {
 		case reflect.String:
 			values.FieldByName(field.Name).SetString(envVal)
-		case reflect.Uint16:
+		case reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uint, reflect.Int:
 			v, err := strconv.ParseUint(envVal, 10, 16)
 			if err != nil {
 				return err

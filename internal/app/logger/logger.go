@@ -1,14 +1,15 @@
 package logger
 
 import (
+	"freeSSO/internal/app/config"
+
 	"github.com/jackc/pgx"
 	"github.com/sirupsen/logrus"
-	"sync"
 )
 
 //PgxLogger pgx logger adapter for logrus
 type PgxLogger struct {
-	l logrus.FieldLogger
+	l *logrus.Entry
 }
 
 func (l *PgxLogger) Log(level pgx.LogLevel, msg string, data map[string]interface{}) {
@@ -35,25 +36,37 @@ func (l *PgxLogger) Log(level pgx.LogLevel, msg string, data map[string]interfac
 	}
 }
 
-var AppLogger *logrus.Logger = nil
-var DbLogger *PgxLogger = nil
-
-func initAppLogger() *logrus.Logger {
-	var once sync.Once
-	once.Do(func() {
-		AppLogger = logrus.New()
+func applyLoggerOptions(logger *logrus.Logger, loglevel logrus.Level) {
+	logger.SetFormatter(&logrus.TextFormatter{
+		DisableColors: true,
+		FullTimestamp: true,
 	})
-	return AppLogger
-}
-func initDbLogger() *PgxLogger {
-	var once sync.Once
-	once.Do(func() {
-		DbLogger = &PgxLogger{}
-	})
-	return DbLogger
+	logger.SetLevel(loglevel)
 }
 
-func init() {
-	initAppLogger()
-	initDbLogger()
+//GetNamedLogger returns named logger for diferent modules of app
+func GetNamedLoggerWithLevel(name string, loglevel logrus.Level) *logrus.Entry {
+	logger := logrus.New()
+	applyLoggerOptions(logger, loglevel)
+	return logger.WithField("logger", name)
+}
+
+func GetNamedLogger(name string) *logrus.Entry {
+	conf := config.GetAppConfig()
+	var level logrus.Level
+	if conf.Debug {
+		level = logrus.DebugLevel
+	} else {
+		level = logrus.InfoLevel
+	}
+	return GetNamedLoggerWithLevel(name, level)
+}
+func GetLogger() *logrus.Entry {
+	return GetNamedLogger("app")
+}
+
+func GetPgxLogger() *PgxLogger {
+	logger := logrus.New()
+	applyLoggerOptions(logger, logrus.DebugLevel)
+	return &PgxLogger{l: logger.WithField("logger", "database")}
 }
