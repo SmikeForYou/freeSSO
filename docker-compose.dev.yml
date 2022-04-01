@@ -1,0 +1,13 @@
+version: '3.7'
+services:
+  db:
+    image: postgres:13
+    volumes:
+      - ./data/db/:/var/lib/postgresql/:delegated
+    ports: 
+      - "5432:5432"
+    environment:
+      - "POSTGRES_PASSWORD=freeSSOpassword"
+      - "POSTGRES_USER=freeSSOuser"
+      - "POSTGRES_DB=freeSSO"
+  

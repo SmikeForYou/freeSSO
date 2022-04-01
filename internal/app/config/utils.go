@@ -36,6 +36,33 @@ func osEnvToMap() map[string]string {
 	return res
 }
 
+func readEnv(field interface{}, envKey string) error {
+	envVal, exists := osEnvToMap()[envKey]
+	if !exists {
+		return nil
+	}
+	value := reflect.ValueOf(field).Elem()
+	switch value.Kind() {
+	case reflect.String:
+		value.SetString(envVal)
+	case reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uint, reflect.Int:
+		v, err := strconv.ParseUint(envVal, 10, 16)
+		if err != nil {
+			return err
+		}
+		value.SetUint(v)
+	case reflect.Bool:
+		boolVal, exists := allowedBool[envVal]
+		if !exists {
+			return fmt.Errorf("not supported bool value. should be one of: %s", strings.Join(allowedBoolKeys(), ", "))
+		}
+		value.SetBool(boolVal)
+	default:
+		return fmt.Errorf("not support type of struct: %s", value.Kind())
+	}
+	return nil
+}
+
 func mapMapToStruct(target interface{}, valuesMap map[string]string) error {
 	fields := reflect.TypeOf(target).Elem()
 	values := reflect.ValueOf(target).Elem()

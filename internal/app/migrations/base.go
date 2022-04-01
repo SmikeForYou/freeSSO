@@ -5,6 +5,7 @@ package migrations
 import (
 	"errors"
 	"fmt"
+	"freeSSO/internal/app/connections"
 	"freeSSO/internal/app/logger"
 	"strings"
 
@@ -21,7 +22,7 @@ type migration struct {
 
 type migrations []migration
 
-var log *logrus.Entry = logger.GetLogger()
+var log *logrus.Entry = logger.GetNamedLogger("migrations")
 
 func (m migrations) getMigration(version string) (migration, error) {
 	for _, mg := range m {
@@ -113,6 +114,10 @@ func (m migrations) apply(version string, pool *pgx.ConnPool) error {
 	return nil
 
 }
+func (m migrations) getLatest() string {
+	ordered, _ := m.order()
+	return ordered[len(ordered)-1].version
+}
 
 //Migrate applies migrations
 func MigrateWithPool(migr migrations, pool *pgx.ConnPool) error {
@@ -131,6 +136,15 @@ func MigrateWithPool(migr migrations, pool *pgx.ConnPool) error {
 		log.Error(errors.New("error ordering migrations"))
 		log.Error(err)
 	}
-	err = ordered.apply("", pool)
+	err = ordered.apply(ordered.getLatest(), pool)
+	return err
+}
+
+func Migrate() error {
+	pool := connections.GetDbConnPool()
+	err := MigrateWithPool(migrationsList, pool)
+	if err != nil {
+		log.Error(err)
+	}
 	return err
 }

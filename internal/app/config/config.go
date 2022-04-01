@@ -2,13 +2,20 @@ package config
 
 import (
 	"fmt"
-	"os"
+	"log"
 )
 
 type MemDbConfig struct {
 	Host     string `env:"MEM_DB_HOST"`
 	Port     uint16 `env:"MEM_DB_PORT"`
 	Password string `env:"MEM_DB_PASSWORD"`
+}
+
+func (m *MemDbConfig) ReadEnv() error {
+	err := readEnv(&m.Host, "MEM_DB_HOST")
+	err = readEnv(&m.Host, "MEM_DB_PORT")
+	err = readEnv(&m.Host, "MEM_DB_PASSWORD")
+	return err
 }
 
 type DbConfig struct {
@@ -43,13 +50,13 @@ type ActionLoggerConfig struct {
 }
 
 type AppConfig struct {
-	SecretKey string `env:"APP_SECRET_KEY"`
-	Debug     bool   `env:"APP_DEBUG"`
-	DbConfig
-	MemDbConfig
-	HttpServerConfig
-	GrpcServerConfig
-	ActionLoggerConfig
+	SecretKey          string `env:"APP_SECRET_KEY"`
+	Debug              bool   `env:"APP_DEBUG"`
+	DbConfig           DbConfig
+	MemDbConfig        MemDbConfig
+	HttpServerConfig   HttpServerConfig
+	GrpcServerConfig   GrpcServerConfig
+	ActionLoggerConfig ActionLoggerConfig
 }
 
 var appConfig *AppConfig
@@ -57,50 +64,46 @@ var appConfig *AppConfig
 // GetAppConfig returns application config
 func GetAppConfig() *AppConfig {
 	if appConfig == nil {
+		appC := AppConfig{}
 		//init base app values
-		err := InitStructFromEnv(&appConfig)
+		err := InitStructFromEnv(&appC)
 		if err != nil {
-			fmt.Print(err)
-			os.Exit(1)
+			log.Fatal(err)
 		}
+		appConfig = &appC
 		//init db config
 		var dbConf DbConfig
 		err = InitStructFromEnv(&dbConf)
 		if err != nil {
-			fmt.Print(err)
-			os.Exit(1)
+			log.Fatal(err)
 		}
 		appConfig.DbConfig = dbConf
 		//init in memory db config
 		var memDbConf MemDbConfig
 		err = InitStructFromEnv(&memDbConf)
 		if err != nil {
-			fmt.Print(err)
-			os.Exit(1)
+			log.Fatal(err)
 		}
 		appConfig.MemDbConfig = memDbConf
 		//init grpc server config
 		var grpcServerConfig GrpcServerConfig
 		err = InitStructFromEnv(&grpcServerConfig)
 		if err != nil {
-			fmt.Print(err)
-			os.Exit(1)
+			log.Fatal(err)
 		}
 		appConfig.GrpcServerConfig = grpcServerConfig
 		//init http server config
 		var httpServerConfig HttpServerConfig
 		err = InitStructFromEnv(&httpServerConfig)
 		if err != nil {
-			fmt.Print(err)
-			os.Exit(1)
+			log.Fatal(err)
 		}
 		appConfig.HttpServerConfig = httpServerConfig
 		//init action logger config
 		var actionLoggerConfig ActionLoggerConfig
 		err = InitStructFromEnv(&actionLoggerConfig)
 		if err != nil {
-			fmt.Print(err)
-			os.Exit(1)
+			log.Fatal(err)
 		}
 		appConfig.ActionLoggerConfig = actionLoggerConfig
 	}
