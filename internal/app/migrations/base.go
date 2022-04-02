@@ -9,7 +9,7 @@ import (
 	"freeSSO/internal/app/logger"
 	"strings"
 
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v4"
 	"github.com/sirupsen/logrus"
 )
 
@@ -99,14 +99,10 @@ func (m migrations) getHead(version string) migrations {
 	}
 	return m
 }
-func (m migrations) apply(version string, pool *pgx.ConnPool) error {
+func (m migrations) apply(version string, conn *pgx.Conn) error {
 	mig := m.getHead(version)
-	conn, err := pool.Acquire()
-	if err != nil {
-		return err
-	}
 	for _, mi := range mig {
-		err = mi.up(conn)
+		err := mi.up(conn)
 		if err != nil {
 			return err
 		}
@@ -120,7 +116,7 @@ func (m migrations) getLatest() string {
 }
 
 //Migrate applies migrations
-func MigrateWithPool(migr migrations, pool *pgx.ConnPool) error {
+func MigrateWithPool(migr migrations, pool *pgx.Conn) error {
 	err := validateVersions(migr)
 	if err != nil {
 		log.Error(errors.New("error validating migrations versions"))

@@ -1,9 +1,10 @@
 package logger
 
 import (
+	"context"
 	"freeSSO/internal/app/config"
 
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v4"
 	"github.com/sirupsen/logrus"
 )
 
@@ -12,7 +13,7 @@ type PgxLogger struct {
 	l *logrus.Entry
 }
 
-func (l *PgxLogger) Log(level pgx.LogLevel, msg string, data map[string]interface{}) {
+func (l *PgxLogger) Log(_ context.Context, level pgx.LogLevel, msg string, data map[string]interface{}) {
 	var logger logrus.FieldLogger
 	if data != nil {
 		logger = l.l.WithFields(data)

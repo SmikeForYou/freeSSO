@@ -1,45 +1,25 @@
 package connections
 
 import (
+	"context"
 	"freeSSO/internal/app/config"
 	"freeSSO/internal/app/logger"
 
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v4"
 )
 
-var pool *pgx.ConnPool = nil
+var pool *pgx.Conn = nil
 var log = logger.GetLogger()
 
 //GetDbConnPool returns db connections pool
-func GetDbConnPool() *pgx.ConnPool {
+func GetDbConnPool() *pgx.Conn {
 	if pool == nil {
 		appConf := config.GetAppConfig()
-		connConf := pgx.ConnPoolConfig{
-			ConnConfig: pgx.ConnConfig{
-				Host:                 appConf.DbConfig.Host,
-				Port:                 appConf.DbConfig.Port,
-				Database:             appConf.DbConfig.Name,
-				User:                 appConf.DbConfig.User,
-				Password:             appConf.DbConfig.Password,
-				TLSConfig:            nil,
-				UseFallbackTLS:       false,
-				FallbackTLSConfig:    nil,
-				Logger:               logger.GetPgxLogger(),
-				LogLevel:             pgx.LogLevel(appConf.DbConfig.LogLevel),
-				Dial:                 nil,
-				RuntimeParams:        nil,
-				OnNotice:             nil,
-				CustomConnInfo:       nil,
-				CustomCancel:         nil,
-				PreferSimpleProtocol: false,
-				TargetSessionAttrs:   "",
-			},
-			MaxConnections: int(appConf.DbConfig.PoolSize),
-			AfterConnect:   nil,
-			AcquireTimeout: 0,
-		}
+		connConf, _ := pgx.ParseConfig(appConf.DbConfig.ConnStr())
+		connConf.Logger = logger.GetPgxLogger()
+		connConf.LogLevel = pgx.LogLevel(appConf.DbConfig.LogLevel)
 		var err error
-		pool, err = pgx.NewConnPool(connConf)
+		pool, err = pgx.ConnectConfig(context.Background(), connConf)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -52,5 +32,5 @@ func GetDbConnPool() *pgx.ConnPool {
 func CloseDbConnPool() {
 	appConf := config.GetAppConfig()
 	log.Infof("Closing db connection pool to database: %s\n", appConf.DbConfig.ConnStr())
-	pool.Close()
+	pool.Close(context.TODO())
 }
