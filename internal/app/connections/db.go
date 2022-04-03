@@ -11,8 +11,8 @@ import (
 var pool *pgx.Conn = nil
 var log = logger.GetLogger()
 
-//GetDbConnPool returns db connections pool
-func GetDbConnPool() *pgx.Conn {
+//GetDbConn returns db connections pool
+func GetDbConn() *pgx.Conn {
 	if pool == nil {
 		appConf := config.GetAppConfig()
 		connConf, _ := pgx.ParseConfig(appConf.DbConfig.ConnStr())
@@ -23,14 +23,14 @@ func GetDbConnPool() *pgx.Conn {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Infof("Succesfully established connection to database: %s\n", appConf.DbConfig.ConnStr())
+		log.Infof("Succesfully established connection to database: %s", appConf.DbConfig.ConnStr())
 	}
 	return pool
 }
 
-//CloseDbConnPool closes db connections pool
-func CloseDbConnPool() {
+//CloseDbConn closes db connections pool
+func CloseDbConn() {
 	appConf := config.GetAppConfig()
-	log.Infof("Closing db connection pool to database: %s\n", appConf.DbConfig.ConnStr())
+	log.Infof("Closing db connection pool to database: %s", appConf.DbConfig.ConnStr())
 	pool.Close(context.TODO())
 }

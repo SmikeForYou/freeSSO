@@ -39,7 +39,6 @@ func (l *PgxLogger) Log(_ context.Context, level pgx.LogLevel, msg string, data 
 
 func applyLoggerOptions(logger *logrus.Logger, loglevel logrus.Level) {
 	logger.SetFormatter(&logrus.TextFormatter{
-		DisableColors: true,
 		FullTimestamp: true,
 	})
 	logger.SetLevel(loglevel)
@@ -58,7 +57,7 @@ func GetNamedLogger(name string) *logrus.Entry {
 	if conf.Debug {
 		level = logrus.DebugLevel
 	} else {
-		level = logrus.InfoLevel
+		level = logrus.WarnLevel
 	}
 	return GetNamedLoggerWithLevel(name, level)
 }

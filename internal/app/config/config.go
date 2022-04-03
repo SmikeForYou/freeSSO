@@ -11,13 +11,6 @@ type MemDbConfig struct {
 	Password string `env:"MEM_DB_PASSWORD"`
 }
 
-func (m *MemDbConfig) ReadEnv() error {
-	err := readEnv(&m.Host, "MEM_DB_HOST")
-	err = readEnv(&m.Host, "MEM_DB_PORT")
-	err = readEnv(&m.Host, "MEM_DB_PASSWORD")
-	return err
-}
-
 type DbConfig struct {
 	Host            string `env:"DB_HOST"`
 	Port            uint16 `env:"DB_PORT"`
@@ -25,7 +18,7 @@ type DbConfig struct {
 	User            string `env:"DB_USER"`
 	Password        string `env:"DB_PASSWORD"`
 	PoolSize        uint16 `env:"DB_POOL_SIZE"`
-	LogLevel        uint16 `env:"DB_LOG_LEVEL"`
+	LogLevel        uint16 //based on APP_DEBUG
 	SslMode         string `env:"DB_SSL_MODE"`
 	SslRootCertPath string `env:"DB_SSL_ROOT_CERT_PATH"`
 	SslKeyPath      string `env:"DB_SSL_KEY_PATH"`
@@ -76,6 +69,10 @@ func GetAppConfig() *AppConfig {
 		err = InitStructFromEnv(&dbConf)
 		if err != nil {
 			log.Fatal(err)
+		}
+		dbConf.LogLevel = 3
+		if appConfig.Debug {
+			dbConf.LogLevel = 5
 		}
 		appConfig.DbConfig = dbConf
 		//init in memory db config
